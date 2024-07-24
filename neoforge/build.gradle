@@ -1,0 +1,67 @@
+import me.modmuss50.mpp.ReleaseType
+
+plugins {
+	id 'multiloader-loader'
+	id 'net.neoforged.moddev'
+	id 'me.modmuss50.mod-publish-plugin'
+}
+
+neoForge {
+	version = neoforge_version
+	// Automatically enable neoforge AccessTransformers if the file exists
+	def at = project(':common').file('src/main/resources/META-INF/accesstransformer.cfg')
+	if (at.exists()) {
+		accessTransformers.add(at.absolutePath)
+	}
+	parchment {
+		minecraftVersion = parchment_minecraft
+		mappingsVersion = parchment_version
+	}
+	runs {
+		configureEach {
+			systemProperty('neoforge.enabledGameTestNamespaces', mod_id)
+			ideName = "NeoForge ${it.name.capitalize()} (${project.path})" // Unify the run config names with fabric
+		}
+		client {
+			client()
+		}
+		data {
+			data()
+			programArguments = [
+				'--mod', mod_id,
+				'--all',
+				'--output', rootProject.file('common/src/generated/resources').absolutePath,
+				'--existing', file('src/main/resources/').absolutePath
+			]
+		}
+		server {
+			server()
+		}
+	}
+	mods {
+		"${mod_id}" {
+			sourceSet sourceSets.main
+		}
+	}
+}
+
+publishMods {
+	file = tasks.jar.archiveFile
+	changelog = rootProject.file("CHANGELOG.md").text
+	version = project.version
+	type = ReleaseType.of(release_type)
+	displayName = "${mod_name} ${version} for ${minecraft_version} NeoForge"
+	modLoaders.add("neoforge")
+
+	curseforge {
+		projectId = curseforge_id
+		accessToken = providers.environmentVariable("CURSEFORGE_TOKEN")
+		minecraftVersions.add(minecraft_version)
+	}
+
+	modrinth {
+		projectId = modrinth_id
+		accessToken = providers.environmentVariable("MODRINTH_TOKEN")
+		minecraftVersions.add(minecraft_version)
+	}
+}
